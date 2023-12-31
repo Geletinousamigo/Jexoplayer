@@ -1,17 +1,21 @@
 package com.geletinousamigo.media.jexoplayer
 
+import android.content.res.Configuration.ORIENTATION_LANDSCAPE
+import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,13 +23,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.geletinousamigo.media.jexoplayer.model.JexoState
@@ -33,40 +37,61 @@ import com.geletinousamigo.media.jexoplayer.model.JexoState
 @Composable
 fun JexoPlayerOverlay(
     modifier: Modifier = Modifier,
-//    focusRequester: FocusRequester = remember { FocusRequester() },
-    state: JexoState = JexoState(),
-    addHideSeconds: (Int) -> Unit = {  },
-    topBar: @Composable () -> Unit = {  },
-    centerButton: @Composable () -> Unit = {  },
-    subtitles: @Composable () -> Unit = {  },
-    controls: @Composable () -> Unit = {  }
+    state: JexoState = JexoState(controlsVisible = true),
+    hideControls: () -> Unit = { },
+    topBar: @Composable () -> Unit = { },
+    centerButton: @Composable () -> Unit = { },
+    subtitles: @Composable () -> Unit = { },
+    controls: @Composable () -> Unit = { }
 ) {
 
 
-    /*LaunchedEffect(state.controlsVisible) {
-        if (state.controlsVisible) {
-            focusRequester.requestFocus()
+    val appearAlpha = remember { Animatable(0f) }
+    val configuration = LocalConfiguration.current
+    val isPortraitMode = configuration.orientation == ORIENTATION_PORTRAIT
+    val paddingModifier = when(configuration.orientation) {
+        ORIENTATION_LANDSCAPE -> {
+            Modifier
+                .padding(horizontal = 32.dp)
+                .padding(bottom = 32.dp)
         }
-    }*/
-
-    LaunchedEffect(state.isPlaying) {
-        if (state.isPlaying) {
-            addHideSeconds(Int.MAX_VALUE)
-        } else {
-            addHideSeconds(3)
-        }
+        else -> { Modifier }
     }
 
+    LaunchedEffect(state.controlsVisible) {
+        appearAlpha.animateTo(
+            targetValue = if (state.controlsVisible) 1f else 0f,
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = LinearEasing
+            )
+        )
+    }
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                hideControls()
+            }
+        )
+
         AnimatedVisibility(state.controlsVisible, Modifier, fadeIn(), fadeOut()) {
             CinematicBackground(Modifier.fillMaxSize())
         }
 
-        Column {
-            
+        Column(
+            modifier = Modifier
+                .alpha(appearAlpha.value)
+//                .background(Color.Black.copy(alpha = appearAlpha.value * 0.6f))
+        ) {
+
             AnimatedVisibility(
                 visible = state.controlsVisible,
                 Modifier,
@@ -82,7 +107,7 @@ fun JexoPlayerOverlay(
                 }
 
             }
-            
+
             Box(
                 Modifier.weight(1f),
                 contentAlignment = Alignment.BottomCenter
@@ -96,17 +121,27 @@ fun JexoPlayerOverlay(
                 slideInVertically { it },
                 slideOutVertically { it }
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 12.dp, top = 8.dp)
-                ) {
-                    controls()
-                }
+                PositionAndDurationNumbers(
+                    modifier = paddingModifier
+                )
             }
         }
-        centerButton()
-        
+
+
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            visible= (state.controlsVisible || isPortraitMode)
+        ) {
+            Box(
+                modifier = paddingModifier
+            ) {
+                controls()
+            }
+        }
+        Box(modifier = Modifier.alpha(appearAlpha.value)){ centerButton() }
+
+//        }
+
     }
 
 }
@@ -125,7 +160,7 @@ fun CinematicBackground(modifier: Modifier = Modifier) {
     )
 }
 
-@Preview(device = "spec:width=411dp,height=891dp", showBackground = true)
+@Preview(device = "spec:width=411dp,height=891dp")
 @Composable
 private fun VideoPlayerOverlayPreview() {
     Box(Modifier.fillMaxSize()) {
@@ -134,32 +169,32 @@ private fun VideoPlayerOverlayPreview() {
             subtitles = {
                 Box(
                     Modifier
+                        .background(Color.Red)
                         .fillMaxWidth()
                         .height(100.dp)
-                        .background(Color.Red)
                 )
             },
             controls = {
                 Box(
                     Modifier
+                        .background(Color.Blue)
                         .fillMaxWidth()
                         .height(100.dp)
-                        .background(Color.Blue)
                 )
             },
             topBar = {
                 Box(
                     Modifier
+                        .background(Color.Gray)
                         .fillMaxWidth()
                         .height(100.dp)
-                        .background(Color.Gray)
                 )
             },
             centerButton = {
                 Box(
                     Modifier
-                        .size(88.dp)
                         .background(Color.Green)
+                        .size(88.dp)
                 )
             }
         )

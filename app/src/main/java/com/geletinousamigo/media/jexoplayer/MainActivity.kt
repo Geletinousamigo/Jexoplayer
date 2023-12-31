@@ -7,27 +7,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource
-import com.geletinousamigo.media.jexoplayer.ui.JexoPlayerScreen
 import com.geletinousamigo.media.jexoplayer.ui.theme.JexoplayerTheme
 
 class MainActivity : ComponentActivity() {
@@ -51,10 +51,17 @@ class MainActivity : ComponentActivity() {
                     val observer = object : DefaultLifecycleObserver {
                         override fun onStop(owner: LifecycleOwner) {
                             jexoPlayer.pause()
+                            super.onStop(owner)
                         }
 
                         override fun onDestroy(owner: LifecycleOwner) {
                             jexoPlayer.reset()
+                            super.onDestroy(owner)
+                        }
+
+                        override fun onResume(owner: LifecycleOwner) {
+                            jexoPlayer.play()
+                            super.onResume(owner)
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -68,26 +75,56 @@ class MainActivity : ComponentActivity() {
                 }
 
 
-                Column(modifier = Modifier.fillMaxSize()) {
-                    JexoPlayerScreen(
-                        jexoPlayer = jexoPlayer,
-                        modifier = Modifier.fillMaxWidth(),
-                        controlsEnabled = true,
-                        gesturesEnabled = true,
-                        backgroundColor = Color.Black
+                Scaffold {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(it)
+                            .systemBarsPadding()
                     ) {
-                        val localPlayer = LocalJexoPlayer.current
-                        val state by localPlayer.state.collectAsState()
+                        JexoPlayerScreen(
+                            jexoPlayer = jexoPlayer,
+                            controlsEnabled = true,
+                            gesturesEnabled = true,
+                            backgroundColor = Color.Black
+                        ) {
+                            val localPlayer = LocalJexoPlayer.current
+                            val state by localPlayer.state.collectAsState()
+                            val isAudioTrackDialogVisible = remember { mutableStateOf(false) }
 
-                        JexoPlayerOverlay(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                            state = state,
-                            centerButton = { /*VideoPlayerPulse(pulsejexoPlayer)*/ },
-                            subtitles = {  /*TODO Implement subtitles*/ },
-                            controls = {
-                                VideoControls()
-                            }
-                        )
+
+                            JexoPlayerOverlay(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter),
+                                state = state,
+                                hideControls = {
+                                    localPlayer.clearHideSeconds()
+                                    localPlayer.hideControls()
+                                },
+                                topBar = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "Awesome Video Title")
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        AudioTrackChangeButton(
+                                            isAudioTrackDialogVisible = isAudioTrackDialogVisible
+                                        )
+                                        FullScreenButton()
+                                    }
+                                },
+                                centerButton = { PlayPauseButton() },
+                                subtitles = {  /*TODO Implement subtitles*/ },
+                                controls = {
+                                    VideoControls()
+                                }
+                            )
+                            AudioTrackSelectorDialog(
+                                isAudioTrackDialogVisible =isAudioTrackDialogVisible
+                            )
+
+                        }
                     }
                 }
 
@@ -99,19 +136,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun VideoControls() {
         JexoPlayerMainFrame(
-            mediaTitle = {
-                Text(text = "Video Name")
-            },
-            mediaActions = {
-
-            },
             seeker = {
                 JexoProgressIndicator()
-            },
-            more = {
-                Button(onClick = {  }) {
-                    Text(text = "More...")
-                }
             }
         )
     }

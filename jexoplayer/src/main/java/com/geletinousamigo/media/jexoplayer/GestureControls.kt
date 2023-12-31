@@ -183,6 +183,7 @@ suspend fun PointerInputScope.detectMediaPlayerGesture(
             )
         }
 
+
         launch {
             detectTapGestures(
                 onTap = onTap,
@@ -232,6 +233,13 @@ fun BoxScope.QuickSeekAnimation(
 }
 
 @Composable
+fun BoxScope.VerticalDraggingProgressOverlay(
+    draggingProgress: DraggingProgress?
+) {
+
+}
+
+@Composable
 fun BoxScope.DraggingProgressOverlay(draggingProgress: DraggingProgress?) {
     AnimatedVisibility(
         visible = draggingProgress != null,
@@ -263,8 +271,6 @@ data class DraggingProgress(
                 "[${if (diffTime < 0) "-" else "+"}${
                     abs(diffTime.toLong()).milliseconds.formatTime()
                 }]"
-
-
 }
 
 enum class QuickSeekDirection {

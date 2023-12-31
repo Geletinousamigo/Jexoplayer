@@ -1,5 +1,6 @@
 package com.geletinousamigo.media.jexoplayer
 
+import androidx.compose.runtime.Stable
 import com.geletinousamigo.media.jexoplayer.model.JexoState
 import com.geletinousamigo.media.jexoplayer.model.Language
 import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource

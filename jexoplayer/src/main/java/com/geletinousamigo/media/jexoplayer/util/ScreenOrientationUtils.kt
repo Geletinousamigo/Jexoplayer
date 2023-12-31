@@ -24,6 +24,7 @@ internal fun Context.findActivity(): Activity? = when (this) {
     is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
+
 internal fun Context.hideSystemUi() {
     val activity = this.findActivity() ?: return
     val window = activity.window ?: return
@@ -31,11 +32,11 @@ internal fun Context.hideSystemUi() {
     windowInsetsController.systemBarsBehavior =
         WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     window.decorView.setOnApplyWindowInsetsListener { view, windowInsets ->
-//        if (windowInsets.isVisible(WindowInsetsCompat.Type.navigationBars())
-//            || windowInsets.isVisible(WindowInsetsCompat.Type.statusBars())
-//        ) {
-        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-//        }
+        if (windowInsets.isVisible(WindowInsetsCompat.Type.navigationBars())
+            || windowInsets.isVisible(WindowInsetsCompat.Type.statusBars())
+        ) {
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        }
         view.onApplyWindowInsets(windowInsets)
     }
 }

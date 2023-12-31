@@ -20,12 +20,30 @@ import com.geletinousamigo.media.jexoplayer.util.handleDPadKeyEvents
 
 @Composable
 fun JexoPlayerMainFrame(
+    modifier: Modifier = Modifier,
+    seeker: @Composable () -> Unit,
+    more: (@Composable () -> Unit)? = null
+) {
+    Column(modifier.fillMaxWidth()) {
+        seeker()
+        if (more != null) {
+            Spacer(Modifier.height(12.dp))
+            Box(Modifier.align(Alignment.CenterHorizontally)) {
+                more()
+            }
+        }
+    }
+}
+
+@Composable
+fun JexoPlayerTvMainFrame(
+    modifier: Modifier = Modifier,
     mediaTitle: @Composable () -> Unit,
     seeker: @Composable () -> Unit,
     mediaActions: @Composable () -> Unit = {},
     more: (@Composable () -> Unit)? = null
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    Column(modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -49,7 +67,7 @@ fun JexoPlayerMainFrame(
 @Preview(device = "spec:width=411dp,height=891dp")
 @Composable
 private fun MediaPlayerMainFramePreviewLayout() {
-    JexoPlayerMainFrame(
+    JexoPlayerTvMainFrame(
         mediaTitle = {
             Box(
                 Modifier

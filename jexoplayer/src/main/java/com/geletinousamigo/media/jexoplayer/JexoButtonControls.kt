@@ -3,19 +3,20 @@ package com.geletinousamigo.media.jexoplayer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -23,10 +24,17 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -89,7 +97,6 @@ fun JexoButtons(
 private fun JexoButtonsContent(modifier: Modifier = Modifier) {
     val controller = LocalJexoPlayer.current
 
-    val x = MutableTransitionState(false)
     Box(modifier = modifier) {
         Box(modifier = Modifier
             .fillMaxSize()
@@ -98,13 +105,14 @@ private fun JexoButtonsContent(modifier: Modifier = Modifier) {
                 interactionSource = remember { MutableInteractionSource() }
             ) {
                 controller.clearHideSeconds()
+                controller.hideControls()
             }
         )
         PositionAndDurationNumbers(modifier = Modifier.align(Alignment.BottomCenter))
         PlayPauseButton(modifier = Modifier.align(Alignment.Center))
         FullScreenButton(modifier = Modifier.align(Alignment.TopEnd))
-        AudioTrackChangeButton(modifier = Modifier.align(Alignment.TopStart), x = x)
-        AudioTrackSelectorDialog(modifier = Modifier.align(Alignment.Center), x = x)
+        AudioTrackChangeButton(modifier = Modifier.align(Alignment.TopStart))
+        AudioTrackSelectorDialog(modifier = Modifier.align(Alignment.Center))
     }
 }
 
@@ -129,15 +137,11 @@ fun FullScreenButton(
 @Composable
 fun AudioTrackChangeButton(
     modifier: Modifier = Modifier,
-    x: MutableTransitionState<Boolean> = MutableTransitionState(false),
+    isAudioTrackDialogVisible: MutableState<Boolean> = mutableStateOf(false),
 ) {
-    val controller = LocalJexoPlayer.current
     IconButton(
         onClick = {
-            x.targetState = x.currentState.not()
-            if (x.targetState) {
-                controller.addHideSeconds(Int.MAX_VALUE)
-            }
+            isAudioTrackDialogVisible.value = isAudioTrackDialogVisible.value.not()
         },
         modifier = modifier
     ) {
@@ -150,6 +154,7 @@ fun PositionAndDurationNumbers(
     modifier: Modifier = Modifier
 ) {
     val controller = LocalJexoPlayer.current
+    val state by controller.collect()
 
     val positionText by controller.collect {
         currentPosition.milliseconds.formatTime()
@@ -157,9 +162,21 @@ fun PositionAndDurationNumbers(
     val remainingDurationText by controller.collect {
         (duration - currentPosition).milliseconds.formatTime()
     }
+    val appearAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(state.controlsVisible) {
+        appearAlpha.animateTo(
+            targetValue = if (state.controlsVisible) 1f else 0f,
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = LinearEasing
+            )
+        )
+    }
 
     Row(
         modifier = modifier
+            .alpha(appearAlpha.value)
             .fillMaxWidth()
             .padding(4.dp)
     ) {
@@ -186,49 +203,53 @@ fun PositionAndDurationNumbers(
 }
 
 @Composable
-fun PlayPauseButton(modifier: Modifier = Modifier) {
+fun PlayPauseButton(
+    modifier: Modifier = Modifier,
+) {
     val controller = LocalJexoPlayer.current
 
     val isPlaying by controller.collect { isPlaying }
     val playbackState by controller.collect { playbackState }
 
-    IconButton(
-        onClick = { controller.playPauseToggle() },
-        modifier = modifier
-    ) {
-        if (isPlaying) {
-            ShadowedIcon(icon = Icons.Filled.Pause)
-        } else {
-            when (playbackState) {
-                PlaybackState.ENDED -> {
-                    ShadowedIcon(icon = Icons.Filled.Restore)
-                }
-                PlaybackState.BUFFERING -> {
-                    CircularProgressIndicator()
-                }
-                else -> {
-                    ShadowedIcon(icon = Icons.Filled.PlayArrow)
+    if (playbackState == PlaybackState.BUFFERING){
+//        CircularProgressIndicator()
+    } else {
+        IconButton(
+            onClick = { controller.playPauseToggle() },
+            modifier = modifier
+        ) {
+            if (isPlaying) {
+                ShadowedIcon(icon = Icons.Filled.Pause)
+            } else {
+                when (playbackState) {
+                    PlaybackState.ENDED -> {
+                        ShadowedIcon(icon = Icons.Filled.Restore)
+                    }
+                    else -> {
+                        ShadowedIcon(icon = Icons.Filled.PlayArrow)
+                    }
                 }
             }
         }
     }
+
 }
 
 @Preview
 @Composable
 fun AudioTrackSelectorDialog(
     modifier: Modifier = Modifier,
-    x: MutableTransitionState<Boolean> = MutableTransitionState(false)
+    isAudioTrackDialogVisible: MutableState<Boolean> = mutableStateOf(false)
 ) {
 
     val controller = LocalJexoPlayer.current
     val selectedAudioTrack by controller.collect { selectedAudioTrack }
     val audioTracks by controller.collect { audioTracks }
 
-    AnimatedVisibility(visibleState = x) {
+    AnimatedVisibility(visible = isAudioTrackDialogVisible.value) {
         Dialog(
             onDismissRequest = {
-                x.targetState = x.currentState.not()
+                isAudioTrackDialogVisible.value = !isAudioTrackDialogVisible.value
                 controller.clearHideSeconds()
             }
         ) {
