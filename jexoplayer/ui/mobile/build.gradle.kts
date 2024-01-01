@@ -1,25 +1,19 @@
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
-
+    id("kotlin-parcelize")
 }
 
 android {
-    namespace = "com.geletinousamigo.media.jexoplayer"
+    namespace = "com.geletinousamigo.media.jexoplayer.ui.mobile"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.geletinousamigo.media.jexoplayer"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -54,22 +48,30 @@ android {
 dependencies {
 
     implementation(libs.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.material3)
+    implementation(libs.material3.icons)
+    implementation(libs.material3.icons.extended)
+
+    // JexoPlayer
+    api(project(":jexoplayer"))
+
+    // Media3
+    implementation(libs.bundles.media3)
+
+
+    // Compose
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
-    implementation(libs.material3)
+//    implementation(libs.androidx.animation.android)
 
-    implementation(project(":jexoplayer:ui:mobile"))
-    implementation(libs.bundles.media3)
-
+    androidTestImplementation(platform(libs.compose.bom))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.ui.test.junit4)
-    debugImplementation(libs.ui.tooling)
-    debugImplementation(libs.ui.test.manifest)
+    debugImplementation(libs.androidx.ui.tooling)
 }

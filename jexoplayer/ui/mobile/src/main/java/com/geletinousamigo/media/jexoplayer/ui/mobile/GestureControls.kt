@@ -1,7 +1,6 @@
-package com.geletinousamigo.media.jexoplayer
+package com.geletinousamigo.media.jexoplayer.ui.mobile
 
 
-import android.os.Parcelable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
@@ -35,14 +34,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.geletinousamigo.media.jexoplayer.util.formatTime
+import com.geletinousamigo.media.jexoplayer.LocalJexoPlayer
+import com.geletinousamigo.media.jexoplayer.model.DraggingProgress
+import com.geletinousamigo.media.jexoplayer.model.QuickSeekDirection
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.parcelize.Parcelize
-import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun JexoGesturesBox(
@@ -232,12 +230,6 @@ fun BoxScope.QuickSeekAnimation(
     )
 }
 
-@Composable
-fun BoxScope.VerticalDraggingProgressOverlay(
-    draggingProgress: DraggingProgress?
-) {
-
-}
 
 @Composable
 fun BoxScope.DraggingProgressOverlay(draggingProgress: DraggingProgress?) {
@@ -261,20 +253,3 @@ fun BoxScope.DraggingProgressOverlay(draggingProgress: DraggingProgress?) {
     }
 }
 
-@Parcelize
-data class DraggingProgress(
-    val finalTime: Float,
-    val diffTime: Float
-) : Parcelable {
-    val progressText: String
-        get() = "${finalTime.toLong().milliseconds.formatTime()} " +
-                "[${if (diffTime < 0) "-" else "+"}${
-                    abs(diffTime.toLong()).milliseconds.formatTime()
-                }]"
-}
-
-enum class QuickSeekDirection {
-    None,
-    Rewind,
-    Forward
-}

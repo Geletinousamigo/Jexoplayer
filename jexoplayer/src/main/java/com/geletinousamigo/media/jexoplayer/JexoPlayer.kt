@@ -1,6 +1,6 @@
 package com.geletinousamigo.media.jexoplayer
 
-import androidx.compose.runtime.Stable
+import androidx.media3.exoplayer.source.MediaSource
 import com.geletinousamigo.media.jexoplayer.model.JexoState
 import com.geletinousamigo.media.jexoplayer.model.Language
 import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource
@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface JexoPlayer {
 
     fun setSource(source: VideoPlayerSource)
+    fun setMediaSource(mediaSource: MediaSource)
 
     fun play()
 

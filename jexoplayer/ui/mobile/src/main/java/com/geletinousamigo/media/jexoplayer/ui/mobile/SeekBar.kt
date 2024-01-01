@@ -1,4 +1,4 @@
-package com.geletinousamigo.media.jexoplayer
+package com.geletinousamigo.media.jexoplayer.ui.mobile
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.Orientation

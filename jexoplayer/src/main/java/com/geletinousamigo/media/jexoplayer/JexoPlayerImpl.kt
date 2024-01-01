@@ -3,6 +3,7 @@ package com.geletinousamigo.media.jexoplayer
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -15,7 +16,9 @@ import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.media3.common.C
+import androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
@@ -23,12 +26,14 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.RawResourceDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import com.geletinousamigo.media.jexoplayer.model.DraggingProgress
 import com.geletinousamigo.media.jexoplayer.model.JexoState
 import com.geletinousamigo.media.jexoplayer.model.Language
 import com.geletinousamigo.media.jexoplayer.model.PlaybackState
@@ -50,6 +55,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import java.net.CookieManager
+import java.net.CookiePolicy
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "JexoPlayerImpl"
@@ -58,7 +66,16 @@ private const val TAG = "JexoPlayerImpl"
 class JexoPlayerImpl(
     private val context: Context,
     private val initialState: JexoState,
-) : JexoPlayer{
+) : JexoPlayer {
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .cookieJar(
+            cookieJar = JavaNetCookieJar(
+                CookieManager().apply {
+                    setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+                }
+            )
+        ).build()
 
     private val countDownTimer = MutableStateFlow(value = 3)
 
@@ -102,20 +119,21 @@ class JexoPlayerImpl(
     private var updateDurationAndPositionJob: Job? = null
     private var anotherJob: Job? = null
 
-    private val playerListener:Player.Listener = object : Player.Listener {
+    private val playerListener: Player.Listener = object : Player.Listener {
 
-
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-            super.onPlayWhenReadyChanged(playWhenReady, reason)
-            _state.update {
-                it.copy(
-                    isPlaying = playWhenReady,
-                )
+        override fun onEvents(player: Player, events: Player.Events) {
+            super.onEvents(player, events)
+            if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
+                _state.update {
+                    it.copy(
+                        isPlaying = player.isPlaying,
+                    )
+                }
             }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if(PlaybackState.of(playbackState) == PlaybackState.READY) {
+            if (PlaybackState.of(playbackState) == PlaybackState.READY) {
                 initialStateRunner = initialStateRunner?.let {
                     it.invoke()
                     null
@@ -132,6 +150,7 @@ class JexoPlayerImpl(
 
             _state.update {
                 it.copy(
+//                    isPlaying = exoPlayer.isPlaying,
                     playbackState = PlaybackState.of(playbackState)
                 )
             }
@@ -166,7 +185,7 @@ class JexoPlayerImpl(
 
         override fun onPlayerError(error: PlaybackException) {
             super.onPlayerError(error)
-            when(error.errorCode) {
+            when (error.errorCode) {
                 PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW -> {
                     Toast.makeText(context, "Behind Live Window", Toast.LENGTH_LONG).show()
                     exoPlayer.apply {
@@ -175,6 +194,7 @@ class JexoPlayerImpl(
                         play()
                     }
                 }
+
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> {
                     Toast.makeText(context, "Network Connection Failed", Toast.LENGTH_LONG).show()
                     exoPlayer.apply {
@@ -183,8 +203,13 @@ class JexoPlayerImpl(
                         play()
                     }
                 }
+
                 else -> {
-                    Toast.makeText(context, "PlayerError: ${error.errorCodeName}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "PlayerError: ${error.errorCodeName}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -195,6 +220,9 @@ class JexoPlayerImpl(
      * Internal exoPlayer instance
      */
     private val exoPlayer = ExoPlayer.Builder(context)
+        .setVideoScalingMode(VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
+        .setSeekForwardIncrementMs(10_000L)
+        .setSeekBackIncrementMs(10_000L)
         .build()
         .apply {
             addListener(playerListener)
@@ -216,7 +244,7 @@ class JexoPlayerImpl(
         exoPlayer.playWhenReady = initialState.isPlaying
 
         coroutineScope.launch {
-            val countimeJob = async {
+            val countTimeJob = async {
                 countDownTimer.collectLatest { time ->
                     Log.d(TAG, "currentlyTime is: $time")
                     if (time > 0) {
@@ -233,7 +261,7 @@ class JexoPlayerImpl(
                     previewExoPlayer.seekTo(position)
                 }
             }
-            countimeJob.await()
+            countTimeJob.await()
             previewJob.await()
         }
     }
@@ -280,6 +308,15 @@ class JexoPlayerImpl(
         }
     }
 
+    override fun setMediaSource(mediaSource: MediaSource) {
+        /*this.mediaSource = mediaSource
+        if (playerView == null) {
+            waitPlayerViewToPrepare.set(true)
+        } else {
+            prepare()
+        }*/
+    }
+
     override fun play() {
         if (exoPlayer.playbackState == Player.STATE_ENDED) {
             exoPlayer.seekTo(0)
@@ -297,14 +334,16 @@ class JexoPlayerImpl(
     }
 
     override fun seekForward() {
-        val target = (exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration)
-        exoPlayer.seekTo(target)
+//        val target = (exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration)
+        exoPlayer.seekForward()
+//        exoPlayer.seekTo(target)
         updateDurationAndPosition()
     }
 
     override fun seekRewind() {
-        val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
-        exoPlayer.seekTo(target)
+//        val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
+//        exoPlayer.seekTo(target)
+        exoPlayer.seekBack()
         updateDurationAndPosition()
     }
 
@@ -314,11 +353,12 @@ class JexoPlayerImpl(
     }
 
     override fun reset() {
-        exoPlayer.stop()
-        previewExoPlayer.stop()
+        /*exoPlayer.stop()
+        previewExoPlayer.stop()*/
+        release()
     }
 
-    fun release() {
+    private fun release() {
         exoPlayer.release()
         previewExoPlayer.release()
     }
@@ -369,40 +409,68 @@ class JexoPlayerImpl(
 
     @OptIn(UnstableApi::class)
     private fun prepare() {
-        fun createVideoSource(): MediaSource {
-            val dataSourceFactory = DefaultHttpDataSource.Factory().apply {
-                setUserAgent("")
-            }
 
+
+
+        fun createDefaultMediaSource(): MediaSource {
+            val mediaLiveConfiguration =
+                MediaItem.LiveConfiguration.Builder().setMaxPlaybackSpeed(1.0f).build()
 
             return when (val source = source) {
                 is VideoPlayerSource.Network.Dash -> {
-                    DashMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(
-                            MediaItem.Builder()
-                                .setUri(source.url)
-                                .setDrmConfiguration(
-                                    MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                                        .setLicenseRequestHeaders(source.headers)
-                                        .build()
-                                )
-                                .build()
-                        )
+                    val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                        .apply {
+                            setUserAgent(source.userAgent)
+                            setDefaultRequestProperties(source.headers)
+                        }
+
+                    val dashDrmConfiguration = MediaItem.DrmConfiguration
+                        .Builder(C.WIDEVINE_UUID)
+                        .setMultiSession(true)
+                        .setLicenseUri(source.licenseUrl)
+                        .setLicenseRequestHeaders(source.headers)
+                        .build()
+
+                    val dashMediaItem = MediaItem.Builder().apply {
+                        setUri(Uri.parse(source.url))
+                        setDrmConfiguration(dashDrmConfiguration)
+                        setLiveConfiguration(mediaLiveConfiguration)
+                        setMimeType(MimeTypes.APPLICATION_MPD)
+                        setTag(null)
+                    }.build()
+
+                    DashMediaSource
+                        .Factory(dataSourceFactory)
+                        .createMediaSource(dashMediaItem)
                 }
+
                 is VideoPlayerSource.Network.Hls -> {
-                    HlsMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(
-                            MediaItem.Builder()
-                                .setUri(source.url)
-                                .setDrmConfiguration(
-                                    MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                                        .setLicenseRequestHeaders(source.headers)
-                                        .build()
-                                )
+                    val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                        .apply {
+                            setUserAgent(source.userAgent)
+                            setDefaultRequestProperties(source.headers)
+                        }
+
+                    val hslMediaItem = MediaItem.Builder()
+                        .setUri(Uri.parse(source.url))
+                        .setDrmConfiguration(
+                            MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                                .setMultiSession(true)
                                 .build()
                         )
+                        .setLiveConfiguration(mediaLiveConfiguration)
+                        .setTag(null)
+                        .build()
+
+                    HlsMediaSource.Factory(dataSourceFactory)
+                        .createMediaSource(hslMediaItem)
                 }
+
                 is VideoPlayerSource.Raw -> {
+                    val dataSourceFactory = DefaultHttpDataSource.Factory()
+                        .apply {
+                            setUserAgent(source.userAgent)
+                        }
                     ProgressiveMediaSource.Factory(dataSourceFactory)
                         .createMediaSource(
                             MediaItem.fromUri(
@@ -413,8 +481,8 @@ class JexoPlayerImpl(
             }
         }
 
-        exoPlayer.setMediaSource(createVideoSource())
-        previewExoPlayer.setMediaSource(createVideoSource())
+        exoPlayer.setMediaSource(createDefaultMediaSource())
+        previewExoPlayer.setMediaSource(createDefaultMediaSource())
 
         exoPlayer.prepare()
         previewExoPlayer.prepare()

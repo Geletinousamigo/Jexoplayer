@@ -1,4 +1,4 @@
-package com.geletinousamigo.media.jexoplayer
+package com.geletinousamigo.media.jexoplayer.ui.mobile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.geletinousamigo.media.jexoplayer.JexoPlayerSurface
+import com.geletinousamigo.media.jexoplayer.LocalJexoPlayer
 
 @Composable
 fun JexoProgressIndicator(

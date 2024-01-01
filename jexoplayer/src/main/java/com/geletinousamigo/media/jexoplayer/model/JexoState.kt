@@ -2,7 +2,6 @@ package com.geletinousamigo.media.jexoplayer.model
 
 import android.os.Parcelable
 import androidx.compose.ui.geometry.Size
-import com.geletinousamigo.media.jexoplayer.DraggingProgress
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 

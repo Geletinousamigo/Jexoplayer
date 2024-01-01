@@ -38,24 +38,30 @@ import com.geletinousamigo.media.jexoplayer.model.JexoState
 fun JexoPlayerOverlay(
     modifier: Modifier = Modifier,
     state: JexoState = JexoState(controlsVisible = true),
-    hideControls: () -> Unit = { },
-    topBar: @Composable () -> Unit = { },
-    centerButton: @Composable () -> Unit = { },
-    subtitles: @Composable () -> Unit = { },
-    controls: @Composable () -> Unit = { }
+    hideControls: () -> Unit = {  },
+    topBar: @Composable () -> Unit = {  },
+    centerButton: @Composable () -> Unit = {  },
+    subtitles: @Composable () -> Unit = {  },
+    controls: @Composable () -> Unit = {  },
+    durationRow: @Composable () -> Unit = {  },
+    gestureBox: @Composable () -> Unit = {  },
+    dialog: @Composable () -> Unit = {  }
 ) {
 
 
     val appearAlpha = remember { Animatable(0f) }
     val configuration = LocalConfiguration.current
     val isPortraitMode = configuration.orientation == ORIENTATION_PORTRAIT
-    val paddingModifier = when(configuration.orientation) {
+    val paddingModifier = when (configuration.orientation) {
         ORIENTATION_LANDSCAPE -> {
             Modifier
                 .padding(horizontal = 32.dp)
                 .padding(bottom = 32.dp)
         }
-        else -> { Modifier }
+
+        else -> {
+            Modifier
+        }
     }
 
     LaunchedEffect(state.controlsVisible) {
@@ -89,7 +95,6 @@ fun JexoPlayerOverlay(
         Column(
             modifier = Modifier
                 .alpha(appearAlpha.value)
-//                .background(Color.Black.copy(alpha = appearAlpha.value * 0.6f))
         ) {
 
             AnimatedVisibility(
@@ -117,20 +122,21 @@ fun JexoPlayerOverlay(
 
             AnimatedVisibility(
                 state.controlsVisible,
-                Modifier,
+                paddingModifier,
                 slideInVertically { it },
                 slideOutVertically { it }
             ) {
-                PositionAndDurationNumbers(
+                durationRow()
+                /*PositionAndDurationNumbers(
                     modifier = paddingModifier
-                )
+                )*/
             }
         }
 
 
         AnimatedVisibility(
             modifier = Modifier.align(Alignment.BottomCenter),
-            visible= (state.controlsVisible || isPortraitMode)
+            visible = (state.controlsVisible || isPortraitMode)
         ) {
             Box(
                 modifier = paddingModifier
@@ -138,9 +144,12 @@ fun JexoPlayerOverlay(
                 controls()
             }
         }
-        Box(modifier = Modifier.alpha(appearAlpha.value)){ centerButton() }
+        Box(modifier = Modifier.alpha(appearAlpha.value)) { centerButton() }
 
-//        }
+        gestureBox()
+
+        dialog()
+
 
     }
 
