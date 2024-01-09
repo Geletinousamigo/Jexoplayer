@@ -20,3 +20,4 @@ include(":jexoplayer")
 
 include(":jexoplayer:ui:tv")
 include(":jexoplayer:ui:mobile")
+include(":tv")

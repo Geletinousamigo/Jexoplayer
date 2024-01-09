@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface JexoPlayer {
 
+    fun provideMediaSource(): MediaSource
     fun setSource(source: VideoPlayerSource)
-    fun setMediaSource(mediaSource: MediaSource)
 
     fun play()
 

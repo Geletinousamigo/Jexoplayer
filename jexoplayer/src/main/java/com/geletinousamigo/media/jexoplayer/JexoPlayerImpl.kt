@@ -63,7 +63,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 private const val TAG = "JexoPlayerImpl"
 
 @OptIn(UnstableApi::class)
-class JexoPlayerImpl(
+open class JexoPlayerImpl(
     private val context: Context,
     private val initialState: JexoState,
 ) : JexoPlayer {
@@ -113,7 +113,7 @@ class JexoPlayerImpl(
         )
     }
 
-    private lateinit var source: VideoPlayerSource
+    lateinit var videoPlayerSource: VideoPlayerSource
     private var playerView: PlayerView? = null
 
     private var updateDurationAndPositionJob: Job? = null
@@ -300,21 +300,12 @@ class JexoPlayerImpl(
     }
 
     override fun setSource(source: VideoPlayerSource) {
-        this.source = source
+        this.videoPlayerSource = source
         if (playerView == null) {
             waitPlayerViewToPrepare.set(true)
         } else {
             prepare()
         }
-    }
-
-    override fun setMediaSource(mediaSource: MediaSource) {
-        /*this.mediaSource = mediaSource
-        if (playerView == null) {
-            waitPlayerViewToPrepare.set(true)
-        } else {
-            prepare()
-        }*/
     }
 
     override fun play() {
@@ -334,15 +325,11 @@ class JexoPlayerImpl(
     }
 
     override fun seekForward() {
-//        val target = (exoPlayer.currentPosition + 10_000).coerceAtMost(exoPlayer.duration)
         exoPlayer.seekForward()
-//        exoPlayer.seekTo(target)
         updateDurationAndPosition()
     }
 
     override fun seekRewind() {
-//        val target = (exoPlayer.currentPosition - 10_000).coerceAtLeast(0)
-//        exoPlayer.seekTo(target)
         exoPlayer.seekBack()
         updateDurationAndPosition()
     }
@@ -353,8 +340,6 @@ class JexoPlayerImpl(
     }
 
     override fun reset() {
-        /*exoPlayer.stop()
-        previewExoPlayer.stop()*/
         release()
     }
 
@@ -407,82 +392,81 @@ class JexoPlayerImpl(
         }
     }
 
+    override fun provideMediaSource(): MediaSource {
+
+        val mediaLiveConfiguration =
+            MediaItem.LiveConfiguration.Builder().setMaxPlaybackSpeed(1.0f).build()
+
+        return when (val source = videoPlayerSource) {
+            is VideoPlayerSource.Network.Dash -> {
+                val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                    .apply {
+                        setUserAgent(source.userAgent)
+                        setDefaultRequestProperties(source.headers)
+                    }
+
+                val dashDrmConfiguration = MediaItem.DrmConfiguration
+                    .Builder(C.WIDEVINE_UUID)
+                    .setMultiSession(true)
+                    .setLicenseUri(source.licenseUrl)
+                    .setLicenseRequestHeaders(source.headers)
+                    .build()
+
+                val dashMediaItem = MediaItem.Builder().apply {
+                    setUri(Uri.parse(source.url))
+                    setDrmConfiguration(dashDrmConfiguration)
+                    setLiveConfiguration(mediaLiveConfiguration)
+                    setMimeType(MimeTypes.APPLICATION_MPD)
+                    setTag(null)
+                }.build()
+
+                DashMediaSource
+                    .Factory(dataSourceFactory)
+                    .createMediaSource(dashMediaItem)
+            }
+
+            is VideoPlayerSource.Network.Hls -> {
+                val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                    .apply {
+                        setUserAgent(source.userAgent)
+                        setDefaultRequestProperties(source.headers)
+                    }
+
+                val hslMediaItem = MediaItem.Builder()
+                    .setUri(Uri.parse(source.url))
+                    .setDrmConfiguration(
+                        MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                            .setMultiSession(true)
+                            .build()
+                    )
+                    .setLiveConfiguration(mediaLiveConfiguration)
+                    .setTag(null)
+                    .build()
+
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(hslMediaItem)
+            }
+
+            is VideoPlayerSource.Raw -> {
+                val dataSourceFactory = DefaultHttpDataSource.Factory()
+                    .apply {
+                        setUserAgent(source.userAgent)
+                    }
+                ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(
+                        MediaItem.fromUri(
+                            RawResourceDataSource.buildRawResourceUri(source.resId)
+                        )
+                    )
+            }
+        }
+    }
+
     @OptIn(UnstableApi::class)
     private fun prepare() {
 
-
-
-        fun createDefaultMediaSource(): MediaSource {
-            val mediaLiveConfiguration =
-                MediaItem.LiveConfiguration.Builder().setMaxPlaybackSpeed(1.0f).build()
-
-            return when (val source = source) {
-                is VideoPlayerSource.Network.Dash -> {
-                    val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-                        .apply {
-                            setUserAgent(source.userAgent)
-                            setDefaultRequestProperties(source.headers)
-                        }
-
-                    val dashDrmConfiguration = MediaItem.DrmConfiguration
-                        .Builder(C.WIDEVINE_UUID)
-                        .setMultiSession(true)
-                        .setLicenseUri(source.licenseUrl)
-                        .setLicenseRequestHeaders(source.headers)
-                        .build()
-
-                    val dashMediaItem = MediaItem.Builder().apply {
-                        setUri(Uri.parse(source.url))
-                        setDrmConfiguration(dashDrmConfiguration)
-                        setLiveConfiguration(mediaLiveConfiguration)
-                        setMimeType(MimeTypes.APPLICATION_MPD)
-                        setTag(null)
-                    }.build()
-
-                    DashMediaSource
-                        .Factory(dataSourceFactory)
-                        .createMediaSource(dashMediaItem)
-                }
-
-                is VideoPlayerSource.Network.Hls -> {
-                    val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-                        .apply {
-                            setUserAgent(source.userAgent)
-                            setDefaultRequestProperties(source.headers)
-                        }
-
-                    val hslMediaItem = MediaItem.Builder()
-                        .setUri(Uri.parse(source.url))
-                        .setDrmConfiguration(
-                            MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                                .setMultiSession(true)
-                                .build()
-                        )
-                        .setLiveConfiguration(mediaLiveConfiguration)
-                        .setTag(null)
-                        .build()
-
-                    HlsMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(hslMediaItem)
-                }
-
-                is VideoPlayerSource.Raw -> {
-                    val dataSourceFactory = DefaultHttpDataSource.Factory()
-                        .apply {
-                            setUserAgent(source.userAgent)
-                        }
-                    ProgressiveMediaSource.Factory(dataSourceFactory)
-                        .createMediaSource(
-                            MediaItem.fromUri(
-                                RawResourceDataSource.buildRawResourceUri(source.resId)
-                            )
-                        )
-                }
-            }
-        }
-
-        exoPlayer.setMediaSource(createDefaultMediaSource())
-        previewExoPlayer.setMediaSource(createDefaultMediaSource())
+        exoPlayer.setMediaSource(provideMediaSource())
+        previewExoPlayer.setMediaSource(provideMediaSource())
 
         exoPlayer.prepare()
         previewExoPlayer.prepare()
@@ -527,3 +511,4 @@ class JexoPlayerImpl(
         }
     }
 }
+

@@ -1,5 +1,6 @@
 package com.geletinousamigo.media.jexoplayer
 
+import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
@@ -11,6 +12,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
+import com.geletinousamigo.media.jexoplayer.model.JexoState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import okhttp3.OkHttpClient
@@ -75,3 +77,4 @@ class PlayerViewModel : ViewModel() {
 
 
 }
+

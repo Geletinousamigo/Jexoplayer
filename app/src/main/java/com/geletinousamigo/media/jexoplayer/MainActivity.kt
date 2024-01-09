@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
+import com.geletinousamigo.media.jexoplayer.customplayer.rememberCustomPlayer
 import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource
 import com.geletinousamigo.media.jexoplayer.ui.mobile.AudioTrackChangeButton
 import com.geletinousamigo.media.jexoplayer.ui.mobile.AudioTrackSelectorDialog
@@ -47,7 +48,10 @@ class MainActivity : ComponentActivity() {
                     url = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
                     userAgent = Util.getUserAgent(this, "plaYtv")
                 )
-                val jexoPlayer = rememberJexoPlayer(source)
+                val jexoPlayer = rememberCustomPlayer(source)
+                /* or
+                * val jexoPlayer = rememberJexoPlayer(source)
+                * */
                 val lifecycleOwner = LocalLifecycleOwner.current
 
                 LaunchedEffect(key1 = Unit, block = {
@@ -69,61 +73,58 @@ class MainActivity : ComponentActivity() {
                             .systemBarsPadding()
                     ) {
 //                        AnimatedVisibility(visible = videoSourceState.source != null) {
-                            JexoPlayerScreen(
-                                jexoPlayer = jexoPlayer,
-                                controlsEnabled = true,
-                                gesturesEnabled = true,
-                                backgroundColor = Color.Black
-                            ) {
-                                val localPlayer = LocalJexoPlayer.current
-                                val state by localPlayer.state.collectAsState()
-                                val isAudioTrackDialogVisible = remember { mutableStateOf(false) }
+                        JexoPlayerScreen(
+                            jexoPlayer = jexoPlayer,
+                            controlsEnabled = true,
+                            gesturesEnabled = true,
+                            backgroundColor = Color.Black
+                        ) {
+                            val localPlayer = LocalJexoPlayer.current
+                            val state by localPlayer.state.collectAsState()
+                            val isAudioTrackDialogVisible = remember { mutableStateOf(false) }
 
 
-                                JexoPlayerOverlay(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter),
-                                    state = state,
-                                    hideControls = {
-                                        localPlayer.clearHideSeconds()
-                                        localPlayer.hideControls()
-                                    },
-                                    topBar = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(text = "Awesome Video Title")
-                                            Spacer(modifier = Modifier.weight(1f))
-                                            AudioTrackChangeButton(
-                                                isAudioTrackDialogVisible = isAudioTrackDialogVisible
-                                            )
-                                            FullScreenButton()
-                                        }
-                                    },
-                                    centerButton = { PlayPauseButton() },
-                                    subtitles = {  /*TODO Implement subtitles*/ },
-                                    controls = {
-                                        VideoControls()
-                                    },
-                                    durationRow = {
-                                        PositionAndDurationNumbers()
-                                    },
-                                    gestureBox = {
-                                        JexoGesturesBox(modifier = Modifier.matchParentSize())
-                                    },
-                                    dialog = {
-                                        AudioTrackSelectorDialog(
-                                            isAudioTrackDialogVisible =isAudioTrackDialogVisible
+                            JexoPlayerOverlay(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter),
+                                state = state,
+                                hideControls = {
+                                    localPlayer.clearHideSeconds()
+                                    localPlayer.hideControls()
+                                },
+                                topBar = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "Awesome Video Title")
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        AudioTrackChangeButton(
+                                            isAudioTrackDialogVisible = isAudioTrackDialogVisible
                                         )
+                                        FullScreenButton()
                                     }
-                                )
-
-                            }
-//                        }
+                                },
+                                centerButton = { PlayPauseButton() },
+                                subtitles = {  /*TODO Implement subtitles*/ },
+                                controls = {
+                                    VideoControls()
+                                },
+                                durationRow = {
+                                    PositionAndDurationNumbers()
+                                },
+                                gestureBox = {
+                                    JexoGesturesBox(modifier = Modifier.matchParentSize())
+                                },
+                                dialog = {
+                                    AudioTrackSelectorDialog(
+                                        isAudioTrackDialogVisible = isAudioTrackDialogVisible
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
-
             }
         }
     }

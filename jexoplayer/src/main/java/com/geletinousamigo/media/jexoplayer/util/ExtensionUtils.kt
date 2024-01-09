@@ -4,6 +4,7 @@ import androidx.media3.common.C.TRACK_TYPE_AUDIO
 import androidx.media3.common.Tracks
 import com.geletinousamigo.media.jexoplayer.model.Language
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
 fun Duration.formatTime(): String {
@@ -13,6 +14,28 @@ fun Duration.formatTime(): String {
         } else {
             "${m.padStartWith0()}:${s.padStartWith0()}"
         }
+    }
+}
+
+fun Long.formatMinSec(): String {
+    val hours = TimeUnit.MILLISECONDS.toHours(this)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(this)
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(this)
+    return if (this == 0L) {
+        "..."
+    } else if(hours > 0){
+        String.format(
+            locale = Locale.getDefault(),
+            format = "%02d:%02d:%02d",
+            hours,
+            minutes - TimeUnit.HOURS.toMinutes(hours),
+            seconds - TimeUnit.MINUTES.toSeconds(minutes)
+        )
+    } else{
+        String.format(Locale.getDefault(), "%02d:%02d",
+            minutes,
+            seconds - TimeUnit.MINUTES.toSeconds(minutes)
+        )
     }
 }
 
