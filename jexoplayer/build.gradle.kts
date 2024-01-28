@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
     id("kotlin-parcelize")
-    id("maven-publish")
 }
 
 android {
@@ -44,11 +43,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
-    }
 }
 
 dependencies {
@@ -79,16 +73,3 @@ dependencies {
 
 }
 
-publishing {
-    publications {
-        register("release", MavenPublication::class.java) {
-            groupId = "io.github.geletinousamigo"
-            artifactId = "jexoplayer"
-            version = "0.0.1"
-
-            afterEvaluate {
-                from(components["release"])
-            }
-        }
-    }
-}

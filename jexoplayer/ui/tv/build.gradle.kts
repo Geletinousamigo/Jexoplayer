@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
     id("kotlin-parcelize")
+    id("maven-publish")
 }
 
 android {
@@ -43,6 +44,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
 dependencies {
@@ -53,7 +59,7 @@ dependencies {
     implementation(libs.material3.icons)
     implementation(libs.material3.icons.extended)
 
-    implementation(project(":jexoplayer"))
+    api(project(":jexoplayer"))
 
     // Media3
     implementation(libs.bundles.media3)
@@ -77,4 +83,18 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     debugImplementation(libs.androidx.ui.tooling)
     androidTestImplementation(platform(libs.compose.bom))
+}
+
+publishing{
+    publications {
+        register("release", MavenPublication::class.java) {
+            groupId = "io.github.geletinousamigo"
+            artifactId = "jexoplayer-tv"
+            version = "0.0.1"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
