@@ -1,12 +1,13 @@
 package com.geletinousamigo.media.jexoplayer
 
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import com.geletinousamigo.media.jexoplayer.model.JexoState
 import com.geletinousamigo.media.jexoplayer.model.Language
 import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource
 import kotlinx.coroutines.flow.StateFlow
 
-interface JexoPlayer {
+interface JexoPlayerController {
 
     fun provideMediaSource(): MediaSource
     fun setSource(source: VideoPlayerSource)
@@ -29,5 +30,8 @@ interface JexoPlayer {
 
     fun setPreferredAudioLanguage(lang: Language)
 
+    fun toggleSubtitles()
+
     val state: StateFlow<JexoState>
+    val exoPlayer: ExoPlayer
 }

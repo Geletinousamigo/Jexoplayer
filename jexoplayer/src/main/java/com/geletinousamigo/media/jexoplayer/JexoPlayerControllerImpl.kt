@@ -10,13 +10,13 @@ import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.media3.common.C
-import androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -28,6 +28,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.RawResourceDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.MetadataRetriever
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
@@ -63,10 +64,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 private const val TAG = "JexoPlayerImpl"
 
 @OptIn(UnstableApi::class)
-open class JexoPlayerImpl(
+open class JexoPlayerControllerImpl(
     private val context: Context,
     private val initialState: JexoState,
-) : JexoPlayer {
+    private val initialExoPlayer: () -> ExoPlayer
+) : JexoPlayerController {
+
+    private var exoPlayerState = mutableStateOf(initialExoPlayer)
+    final override val exoPlayer: ExoPlayer get() = exoPlayerState.value.invoke()
 
     private val okHttpClient = OkHttpClient.Builder()
         .cookieJar(
@@ -190,6 +195,7 @@ open class JexoPlayerImpl(
                     Toast.makeText(context, "Behind Live Window", Toast.LENGTH_LONG).show()
                     exoPlayer.apply {
                         seekToDefaultPosition()
+                        seekTo(currentPosition)
                         prepare()
                         play()
                     }
@@ -198,7 +204,8 @@ open class JexoPlayerImpl(
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> {
                     Toast.makeText(context, "Network Connection Failed", Toast.LENGTH_LONG).show()
                     exoPlayer.apply {
-                        seekToDefaultPosition()
+//                        seekToDefaultPosition()
+                        seekTo(currentPosition)
                         prepare()
                         play()
                     }
@@ -219,15 +226,15 @@ open class JexoPlayerImpl(
     /**
      * Internal exoPlayer instance
      */
-    private val exoPlayer = ExoPlayer.Builder(context)
-        .setVideoScalingMode(VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
+    /*private val exoPlayer = ExoPlayer.Builder(context)
+//        .setVideoScalingMode(VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
         .setSeekForwardIncrementMs(10_000L)
         .setSeekBackIncrementMs(10_000L)
         .build()
         .apply {
             addListener(playerListener)
 
-        }
+        }*/
 
     /**
      * Not so efficient way of showing preview in video slider.
@@ -241,6 +248,7 @@ open class JexoPlayerImpl(
     private val previewSeekDebouncer = FlowDebouncer<Long>(200L)
 
     init {
+        exoPlayer.addListener(playerListener)
         exoPlayer.playWhenReady = initialState.isPlaying
 
         coroutineScope.launch {
@@ -295,6 +303,14 @@ open class JexoPlayerImpl(
         _state.update {
             it.copy(
                 selectedAudioTrack = lang
+            )
+        }
+    }
+
+    override fun toggleSubtitles() {
+        _state.update {
+            it.copy(
+                useSubTitles = !_state.value.useSubTitles
             )
         }
     }
@@ -408,7 +424,11 @@ open class JexoPlayerImpl(
                 val dashDrmConfiguration = MediaItem.DrmConfiguration
                     .Builder(C.WIDEVINE_UUID)
                     .setMultiSession(true)
-                    .setLicenseUri(source.licenseUrl)
+                    .apply {
+                        if (source.licenseUrl.isNotEmpty()){
+                            setLicenseUri(source.licenseUrl)
+                        }
+                    }
                     .setLicenseRequestHeaders(source.headers)
                     .build()
 
@@ -497,15 +517,16 @@ open class JexoPlayerImpl(
     }
 
     companion object {
-        fun saver(context: Context) = object : Saver<JexoPlayerImpl, JexoState> {
-            override fun restore(value: JexoState): JexoPlayerImpl {
-                return JexoPlayerImpl(
+        fun saver(context: Context, exoPlayer: ()-> ExoPlayer) = object : Saver<JexoPlayerControllerImpl, JexoState> {
+            override fun restore(value: JexoState): JexoPlayerControllerImpl {
+                return JexoPlayerControllerImpl(
                     context = context,
-                    initialState = value
+                    initialState = value,
+                    initialExoPlayer = exoPlayer
                 )
             }
 
-            override fun SaverScope.save(value: JexoPlayerImpl): JexoState {
+            override fun SaverScope.save(value: JexoPlayerControllerImpl): JexoState {
                 return value.currentState { it }
             }
         }

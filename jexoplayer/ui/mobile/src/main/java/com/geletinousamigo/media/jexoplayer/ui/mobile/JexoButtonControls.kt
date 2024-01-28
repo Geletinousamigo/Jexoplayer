@@ -8,11 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -20,17 +16,27 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.SubtitlesOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,7 +45,6 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.geletinousamigo.media.jexoplayer.LocalJexoPlayer
 import com.geletinousamigo.media.jexoplayer.model.Language
 import com.geletinousamigo.media.jexoplayer.model.PlaybackState.BUFFERING
@@ -66,6 +71,7 @@ fun FullScreenButton(
     }
 }
 
+@Preview
 @Composable
 fun AudioTrackChangeButton(
     modifier: Modifier = Modifier,
@@ -78,6 +84,28 @@ fun AudioTrackChangeButton(
         modifier = modifier
     ) {
         ShadowedIcon(icon = Icons.Filled.Settings)
+    }
+}
+
+@Preview
+@Composable
+fun SubtitleButton(
+    modifier: Modifier = Modifier,
+) {
+    val controller = LocalJexoPlayer.current
+    val useSubtitles by controller.collect { useSubTitles }
+    IconButton(
+        onClick = {
+            controller.toggleSubtitles()
+        },
+        modifier = modifier
+    ) {
+        if (useSubtitles) {
+            ShadowedIcon(icon = Icons.Filled.Subtitles)
+        } else {
+            ShadowedIcon(icon = Icons.Filled.SubtitlesOff)
+        }
+
     }
 }
 
@@ -134,6 +162,7 @@ fun PositionAndDurationNumbers(
     }
 }
 
+@Preview
 @Composable
 fun PlayPauseButton(
     modifier: Modifier = Modifier,
@@ -143,7 +172,7 @@ fun PlayPauseButton(
     val isPlaying by controller.collect { isPlaying }
     val playbackState by controller.collect { playbackState }
 
-    if (playbackState == BUFFERING){
+    if (playbackState == BUFFERING) {
         /*CircularProgressIndicator(
             modifier = modifier
         )*/
@@ -159,6 +188,7 @@ fun PlayPauseButton(
                     ENDED -> {
                         ShadowedIcon(icon = Icons.Filled.Restore)
                     }
+
                     else -> {
                         ShadowedIcon(icon = Icons.Filled.PlayArrow)
                     }
@@ -170,6 +200,7 @@ fun PlayPauseButton(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun AudioTrackSelectorDialog(
@@ -182,40 +213,99 @@ fun AudioTrackSelectorDialog(
     val audioTracks by controller.collect { audioTracks }
 
     AnimatedVisibility(visible = isAudioTrackDialogVisible.value) {
-        Dialog(
+
+        var isExpanded by remember { mutableStateOf(false) }
+        var tempSelectedLang by remember { mutableStateOf(selectedAudioTrack) }
+
+        AlertDialog(
             onDismissRequest = {
-                isAudioTrackDialogVisible.value = !isAudioTrackDialogVisible.value
+                isAudioTrackDialogVisible.value = false
                 controller.clearHideSeconds()
-            }
-        ) {
-
-            Surface(
-                modifier = modifier.width(300.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-
-                LazyColumn(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    item {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            text = "Select Preferred Language"
-                        )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (selectedAudioTrack != tempSelectedLang) {
+                            controller.setPreferredAudioLanguage(tempSelectedLang!!)
+                        }
+                        isAudioTrackDialogVisible.value = false
                     }
-                    items(audioTracks) { lang ->
-                        SelectableItem(
-                            language = lang,
-                            selectedAudioTrack = selectedAudioTrack ?: audioTracks.first(),
-                            onClickListener = controller::setPreferredAudioLanguage
+                ) {
+                    Text(text = "Apply")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        isAudioTrackDialogVisible.value = false
+                    }
+                ) {
+                    Text(text = "Cancel")
+                }
+            },
+            title = {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Settings"
+                )
+            },
+            text = {
+                Row {
+                    Text(text = "Audio: ")
+                    ExposedDropdownMenuBox(
+                        expanded = isExpanded,
+                        onExpandedChange = { isExpanded = it }
+                    ) {
+                        TextField(
+                            value = tempSelectedLang?.name ?: "None",
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+                            },
+                            shape = OutlinedTextFieldDefaults.shape,
+                            colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                            modifier = Modifier.menuAnchor()
                         )
+                        ExposedDropdownMenu(
+                            expanded = isExpanded,
+                            onDismissRequest = { isExpanded = false }
+                        ) {
+                            audioTracks.forEach {
+                                DropdownMenuItem(
+                                    text = { Text(text = it.name) },
+                                    onClick = {
+                                        tempSelectedLang = it
+                                        isExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
+            }
+        )
 
+        /*LazyColumn(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            item {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Select Preferred Language"
+                )
             }
 
-        }
+            items(audioTracks) { lang ->
+                SelectableItem(
+                    language = lang,
+                    selectedAudioTrack = selectedAudioTrack ?: audioTracks.first(),
+                    onClickListener = controller::setPreferredAudioLanguage
+                )
+            }
+        }*/
+
     }
 }
 

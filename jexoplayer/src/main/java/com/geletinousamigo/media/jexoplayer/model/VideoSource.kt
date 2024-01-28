@@ -12,7 +12,7 @@ sealed class VideoPlayerSource() {
         data class Dash(
             val url: String,
             val headers: Map<String, String> = mapOf(),
-            val licenseUrl: String,
+            val licenseUrl: String = "",
             val userAgent: String
         ) : VideoPlayerSource()
 

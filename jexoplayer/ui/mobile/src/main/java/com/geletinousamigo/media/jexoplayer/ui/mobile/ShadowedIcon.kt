@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 fun ShadowedIcon(
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    iconSize: Dp = 48.dp,
+    iconSize: Dp = 32.dp,
 ) {
     Box(modifier = modifier) {
         Icon(

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
     id("kotlin-parcelize")
+    id("maven-publish")
 }
 
 android {
@@ -26,21 +27,26 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_19
+        targetCompatibility = JavaVersion.VERSION_19
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "19"
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
         }
     }
 }
@@ -71,4 +77,18 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     debugImplementation(libs.androidx.ui.tooling)
 
+}
+
+publishing {
+    publications {
+        register("release", MavenPublication::class.java) {
+            groupId = "io.github.geletinousamigo"
+            artifactId = "jexoplayer"
+            version = "0.0.1"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }

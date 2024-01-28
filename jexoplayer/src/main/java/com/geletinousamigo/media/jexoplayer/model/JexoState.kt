@@ -11,6 +11,7 @@ data class JexoState(
     val selectedAudioTrack: Language? = null,
     val audioTracks: List<Language> = emptyList(),
     val isFullScreen: Boolean = false,
+    val useSubTitles: Boolean = false,
     val controlsVisible: Boolean = true,
     val controlsEnabled: Boolean = true,
     val gesturesEnabled: Boolean = true,

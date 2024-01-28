@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -26,7 +26,6 @@ import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.geletinousamigo.media.jexoplayer.LocalJexoPlayer
-import com.geletinousamigo.media.jexoplayer.model.Language
 
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -61,7 +60,8 @@ fun TvAudioTrackSelectorModal(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Divider()
+
+                HorizontalDivider()
             }
 
             languages.forEach { lang ->

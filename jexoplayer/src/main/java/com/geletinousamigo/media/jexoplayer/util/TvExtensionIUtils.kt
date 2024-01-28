@@ -4,10 +4,12 @@ package com.geletinousamigo.media.jexoplayer.util
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.view.KeyEvent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -18,6 +20,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.geletinousamigo.media.jexoplayer.LocalJexoPlayer
 
@@ -148,9 +151,15 @@ fun Modifier.dPadEvents(): Modifier {
 }
 
 @Composable
+fun isLandScape(): Boolean {
+    val configuration = LocalConfiguration.current
+    return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+}
+@Composable
+@Stable
 fun isTelevision(): Boolean {
     val context = LocalContext.current
-    return context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+    return context.isTelevision()
 }
 
 fun Context.isTelevision(): Boolean {

@@ -1,33 +1,6 @@
 package com.geletinousamigo.media.jexoplayer.customplayer
 
-import android.content.Context
-import android.net.Uri
-import androidx.annotation.OptIn
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.SaverScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
-import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.RawResourceDataSource
-import androidx.media3.datasource.okhttp.OkHttpDataSource
-import androidx.media3.exoplayer.dash.DashMediaSource
-import androidx.media3.exoplayer.hls.HlsMediaSource
-import androidx.media3.exoplayer.source.MediaSource
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import com.geletinousamigo.media.jexoplayer.JavaNetCookieJar
-import com.geletinousamigo.media.jexoplayer.JexoPlayer
-import com.geletinousamigo.media.jexoplayer.JexoPlayerImpl
-import com.geletinousamigo.media.jexoplayer.model.JexoState
-import com.geletinousamigo.media.jexoplayer.model.VideoPlayerSource
-import okhttp3.OkHttpClient
-import java.net.CookieManager
-import java.net.CookiePolicy
-
+/*
 @Composable
 fun rememberCustomPlayer(
     source: VideoPlayerSource? = null
@@ -147,4 +120,4 @@ class CustomPlayerImpl(
         }
     }
 }
-
+*/
