@@ -85,8 +85,8 @@ dependencies {
 publishing{
     publications {
         register("release", MavenPublication::class.java) {
-            groupId = "io.github.geletinousamigo"
-            artifactId = "jexoplayer-mobile"
+            groupId = "com.geletinousamigo.media"
+            artifactId = "jexoplayer-ui-mobile"
             version = "0.0.1"
 
             afterEvaluate {

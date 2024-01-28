@@ -88,8 +88,8 @@ dependencies {
 publishing{
     publications {
         register("release", MavenPublication::class.java) {
-            groupId = "io.github.geletinousamigo"
-            artifactId = "jexoplayer-tv"
+            groupId = "com.geletinousamigo.media"
+            artifactId = "jexoplayer-ui-tv"
             version = "0.0.1"
 
             afterEvaluate {
