@@ -94,4 +94,10 @@ publishing{
             }
         }
     }
+    repositories {
+        maven {
+            name = "myrepo"
+            url = uri("${project.buildDir}/repo")
+        }
+    }
 }
