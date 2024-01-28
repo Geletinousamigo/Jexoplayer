@@ -45,8 +45,8 @@ android {
         }
     }
     publishing {
-        multipleVariants("release") {
-            allVariants()
+        singleVariant("release") {
+            withSourcesJar()
             withJavadocJar()
         }
     }

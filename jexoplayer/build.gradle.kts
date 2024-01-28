@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
     id("kotlin-parcelize")
+    id("maven-publish")
 }
 
 android {
@@ -43,6 +44,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 dependencies {
@@ -73,3 +80,22 @@ dependencies {
 
 }
 
+publishing{
+    publications {
+        register("release", MavenPublication::class.java) {
+            groupId = "com.geletinousamigo.media"
+            artifactId = "jexoplayer-core"
+            version = "0.0.1"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "myrepo"
+            url = uri("${project.buildDir}/repo")
+        }
+    }
+}
